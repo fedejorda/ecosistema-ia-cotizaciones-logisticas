@@ -1,0 +1,25 @@
+# Checklist final de entrega
+
+- [x] Workflow n8n final exportado.
+- [x] PDF final generado.
+- [x] Diagrama de arquitectura.
+- [x] Documentación de estructuras de datos y JSON.
+- [x] Matriz de costos incluida en el PDF.
+- [x] Seguridad y resiliencia documentadas.
+- [x] Dashboard creado en Airtable.
+- [x] Rama HITL implementada.
+- [x] Rama de datos incompletos implementada.
+- [x] Rama de tarifa inexistente implementada.
+- [x] Manejo de error del agente de extracción implementado.
+- [x] URL pública del Dashboard agregada al README.
+- [x] URL pública de Cotizaciones agregada al README.
+- [x] URL pública de Rutas y Tarifas agregada al README.
+- [x] Captura `evidencias/workflow_final.png` agregada.
+- [x] Captura `evidencias/hitl_aprobacion.png` agregada.
+- [x] Capturas finales del Dashboard agregadas.
+- [x] Base renombrada a `Cotizaciones Logísticas IA` y JSON reexportado.
+- [x] Repositorio público de GitHub creado.
+- [x] Video demostrativo de aproximadamente 3 minutos grabado y subido a Google Drive.
+- [x] URL del video agregada al README.
+- [ ] Subir todos los archivos conservando esta estructura.
+- [ ] Abrir el repositorio desde una ventana incógnito y verificar README, imágenes, enlaces públicos de Airtable y video de Google Drive.

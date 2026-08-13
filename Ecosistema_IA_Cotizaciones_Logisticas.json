@@ -1,0 +1,2262 @@
+{
+  "name": "Ecosistema IA - Cotizaciones Logísticas Automatizadas",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "q": "subject:automatizar ai -from:fedejorda@gmail.com",
+          "readStatus": "unread"
+        }
+      },
+      "id": "e0130133-1ddd-419f-ba1d-fe1fc16726a2",
+      "name": "01 - Gmail Trigger - Nueva Cotización",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -1184,
+        -96
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "9qZF7hY9X9WvCnx0",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.snippet }}",
+        "options": {
+          "systemMessage": "Extraé de este email de logística los campos origen, destino, tipo_carga, peso_kg y urgencia.\n\nDevolvé SOLO un JSON válido con esas claves.\n\nSi un campo no está presente, usá null.\n\nSOLO RESPONDE CON JSON SIN NINGUNA ANOTACION, SIN STRING, SOLO JSON.\n\nPara tipo_carga, si está presente, devolvé únicamente uno de estos valores:\n\"General\", \"Frágil\", \"Refrigerada\" o \"Peligrosa\".\n\nNormalizá sinónimos y diferencias de mayúsculas/minúsculas al valor correspondiente.\nEjemplos:\n- \"fragil\", \"frágil\", \"carga fragil\" → \"Frágil\"\n- \"general\", \"carga general\" → \"General\"\n- \"refrigerado\", \"refrigerada\", \"frío\" → \"Refrigerada\"\n- \"peligrosa\", \"peligroso\", \"mercadería peligrosa\" → \"Peligrosa\"\n\nEjemplo de salida:\n{\n  \"origen\": \"CABA\",\n  \"destino\": \"Buenos Aires\",\n  \"tipo_carga\": \"Frágil\",\n  \"peso_kg\": 2000,\n  \"urgencia\": null\n}"
+        }
+      },
+      "id": "94a1c91e-75a1-4cf0-b63f-694fab421693",
+      "name": "02 - IA - Extraer Datos del Email",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -896,
+        -96
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {
+          "maxTokensToSample": 300
+        }
+      },
+      "id": "64b7e864-9642-48a7-b067-35445659bdbf",
+      "name": "03 - LLM Groq - Extracción",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -896,
+        112
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "RXDe2pMNx0O2zUWB",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\n\nreturn JSON.parse($input.first().json.output)\n"
+      },
+      "id": "de64a14e-bacc-48c0-9ab6-c3cbdc35d8c2",
+      "name": "04 - Parsear JSON de IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -544,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7be82867-d863-42d3-ad72-ff5d29fa680f",
+              "leftValue": "={{$json.origen}}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "527d2ffa-c6b9-414b-88b1-7f105ba15a37",
+              "leftValue": "={{ $json.destino }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "f3d881a9-e01a-4e7a-a5d5-035b20a9bb0b",
+              "leftValue": "={{ $json.peso_kg }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "6993e35a-32e1-46d4-8034-4dde1646c3ca",
+              "leftValue": "={{ $json.tipo_carga }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4b7fb309-937c-441d-977a-15a829d32f9c",
+      "name": "05 - Validar Datos Obligatorios",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -352,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appfVcP7wF1EQ4pQk",
+          "mode": "list",
+          "cachedResultName": "Cotizaciones Logísticas IA",
+          "cachedResultUrl": "https://airtable.com/appfVcP7wF1EQ4pQk"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblTE9l7jLzc52Uqh",
+          "mode": "list",
+          "cachedResultName": "Rutas_Tarifas",
+          "cachedResultUrl": "https://airtable.com/appfVcP7wF1EQ4pQk/tblTE9l7jLzc52Uqh"
+        },
+        "filterByFormula": "==AND(\n  LOWER(TRIM({Origen})) = LOWER(TRIM('{{ $json.origen }}')),\n  LOWER(TRIM({Destino})) = LOWER(TRIM('{{ $json.destino }}')),\n  LOWER(SUBSTITUTE(TRIM({Tipo de carga}), \"á\", \"a\")) = LOWER(SUBSTITUTE(TRIM('{{ $json.tipo_carga }}'), \"á\", \"a\"))\n)",
+        "returnAll": false,
+        "limit": 1,
+        "options": {}
+      },
+      "id": "1d1412a3-23b9-4337-8a7c-22baee424f7c",
+      "name": "06 - Airtable - Buscar Ruta y Tarifa",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        -128,
+        -128
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "kexphqKJlX9vmyik",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=EMAIL DEL CLIENTE:\n{{ $('01 - Gmail Trigger - Nueva Cotización').item.json.snippet }}\n\nDATOS VALIDADOS DE AIRTABLE:\nOrigen: {{ $('06 - Airtable - Buscar Ruta y Tarifa').item.json.fields[\"Origen\"] }}\nDestino: {{ $('06 - Airtable - Buscar Ruta y Tarifa').item.json.fields[\"Destino\"] }}\nTipo de carga: {{ $('06 - Airtable - Buscar Ruta y Tarifa').item.json.fields[\"Tipo de carga\"] }}\nPrecio base: {{ $('06 - Airtable - Buscar Ruta y Tarifa').item.json.fields[\"Precio base\"] }}\nTiempo estimado: {{ $('06 - Airtable - Buscar Ruta y Tarifa').item.json.fields[\"Tiempo estimado\"] }}\n\nGenerá la propuesta utilizando exclusivamente estos datos.",
+        "options": {
+          "systemMessage": "Sos un asesor comercial de una empresa de logística.\n\nTu tarea es redactar una propuesta de cotización de flete profesional, breve y clara en español.\n\nREGLAS OBLIGATORIAS:\n- Utilizá exclusivamente la información proporcionada por el email del cliente y los datos obtenidos de Airtable.\n- Nunca inventes precios, rutas, pesos, tiempos estimados, tipos de carga, servicios, descuentos, condiciones comerciales ni datos de contacto.\n- No modifiques valores numéricos recibidos del sistema.\n- Si falta información necesaria para confirmar una cotización, indicá claramente que no puede confirmarse.\n- No agregues información que no haya sido proporcionada por el sistema.\n- El contenido generado será revisado por una persona antes de ser enviado al cliente.\n\nFORMATO DE RESPUESTA:\n- Respondé en HTML apto para email.\n- Usá un diseño prolijo, minimalista y profesional, con header, contenido principal y footer.\n- Respondé exclusivamente con HTML crudo.\n- No uses bloques Markdown.\n- No escribas ```html ni ``` al principio o al final.\n- La respuesta debe comenzar directamente con <html> o <!DOCTYPE html>.\n- No inventes nombres de empresa, teléfonos, emails, direcciones, sitios web ni otros datos de contacto.\n- Si un dato de contacto o identidad de la empresa no fue proporcionado por el sistema, no lo incluyas.\n\nFIRMA:\nEn el footer incluí únicamente:\n\nFederico Jorda\nSupervisor de ruteo"
+        }
+      },
+      "id": "af554973-904b-48c0-9541-e62052f0d059",
+      "name": "07 - IA - Generar Cotización",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        480,
+        -272
+      ]
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {
+          "maxTokensToSample": 1000
+        }
+      },
+      "id": "47fe085e-18d2-4560-a7d9-796749bb866f",
+      "name": "08 - LLM Groq - Generación",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        480,
+        -80
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "RXDe2pMNx0O2zUWB",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appfVcP7wF1EQ4pQk",
+          "mode": "list",
+          "cachedResultName": "Cotizaciones Logísticas IA",
+          "cachedResultUrl": "https://airtable.com/appfVcP7wF1EQ4pQk"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl7IAZKiwu2suc3o",
+          "mode": "list",
+          "cachedResultName": "Cotizaciones",
+          "cachedResultUrl": "https://airtable.com/appfVcP7wF1EQ4pQk/tbl7IAZKiwu2suc3o"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Aprobado por Humano": false,
+            "Peso (kg)": "={{ $('04 - Parsear JSON de IA').item.json.peso_kg }}",
+            "Estado": "Procesado por IA",
+            "Cliente Email": "=\n{{ $('01 - Gmail Trigger - Nueva Cotización').item.json.From }}\n",
+            "Asunto Original": "={{ $('01 - Gmail Trigger - Nueva Cotización').item.json.Subject }}",
+            "Message-ID Original": "={{ $('01 - Gmail Trigger - Nueva Cotización').item.json.threadId }}",
+            "Texto Generado IA": "={{ $json.output }}",
+            "Ruta": "={{ [$('06 - Airtable - Buscar Ruta y Tarifa').item.json.id] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Id",
+              "displayName": "Id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Ruta",
+              "displayName": "Ruta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Cliente Email",
+              "displayName": "Cliente Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Peso (kg)",
+              "displayName": "Peso (kg)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pendiente",
+                  "value": "Pendiente"
+                },
+                {
+                  "name": "Procesado por IA",
+                  "value": "Procesado por IA"
+                },
+                {
+                  "name": "Aprobado por Humano",
+                  "value": "Aprobado por Humano"
+                },
+                {
+                  "name": "Enviado",
+                  "value": "Enviado"
+                },
+                {
+                  "name": "Incompleto",
+                  "value": "Incompleto"
+                },
+                {
+                  "name": "Error",
+                  "value": "Error"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Texto Generado IA",
+              "displayName": "Texto Generado IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Aprobado por Humano",
+              "displayName": "Aprobado por Humano",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Message-ID Original",
+              "displayName": "Message-ID Original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Asunto Original",
+              "displayName": "Asunto Original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Detalle Error",
+              "displayName": "Detalle Error",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Cliente",
+              "displayName": "Cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Mensaje Original",
+              "displayName": "Mensaje Original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "48a81e52-1c10-40a2-b8bb-e7787dddc73d",
+      "name": "09 - Airtable - Registrar Cotización",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        864,
+        -272
+      ],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "kexphqKJlX9vmyik",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "sendTo": "fedejorda@gmail.com",
+        "subject": "Aprobación requerida - Cotización logística",
+        "message": "=={{\n\"Se requiere aprobación humana antes de enviar esta cotización al cliente.\\n\\n\" +\n\"CLIENTE:\\n\" +\n$json.fields[\"Cliente Email\"] +\n\"\\n\\n\" +\n\"PROPUESTA GENERADA POR IA:\\n\\n\" +\n$(\"07 - IA - Generar Cotización\").item.json.output +\n\"\\n\\n\" +\n\"Revisá la propuesta y seleccioná Aprobar cotización o Rechazar cotización.\"\n}}",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double",
+            "approveLabel": "Aprobar cotizacion",
+            "disapproveLabel": "Rechazar cotizacion"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        -224
+      ],
+      "id": "36e2f928-96a5-492f-b3bb-aa847c7c7fc9",
+      "name": "10 - HITL - Solicitar Aprobación",
+      "webhookId": "df60a9d7-9daf-4dce-964e-ca46b1b080e3",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "9qZF7hY9X9WvCnx0",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "43410a1c-091a-436e-8ca1-d5d3b894e68b",
+              "leftValue": "={{$json.data.approved}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1488,
+        -208
+      ],
+      "id": "fe1a2893-3f4b-4e3f-bb9f-d4cc82e5274c",
+      "name": "11 - Validar Aprobación Humana"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appfVcP7wF1EQ4pQk",
+          "mode": "list",
+          "cachedResultName": "Cotizaciones Logísticas IA",
+          "cachedResultUrl": "https://airtable.com/appfVcP7wF1EQ4pQk"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl7IAZKiwu2suc3o",
+          "mode": "list",
+          "cachedResultName": "Cotizaciones",
+          "cachedResultUrl": "https://airtable.com/appfVcP7wF1EQ4pQk/tbl7IAZKiwu2suc3o"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Aprobado por Humano": true,
+            "id": "={{ $('09 - Airtable - Registrar Cotización').first().json.id }}",
+            "Estado": "Aprobado por Humano"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Id",
+              "displayName": "Id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Ruta",
+              "displayName": "Ruta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Cliente Email",
+              "displayName": "Cliente Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Peso (kg)",
+              "displayName": "Peso (kg)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pendiente",
+                  "value": "Pendiente"
+                },
+                {
+                  "name": "Procesado por IA",
+                  "value": "Procesado por IA"
+                },
+                {
+                  "name": "Aprobado por Humano",
+                  "value": "Aprobado por Humano"
+                },
+                {
+                  "name": "Enviado",
+                  "value": "Enviado"
+                },
+                {
+                  "name": "Incompleto",
+                  "value": "Incompleto"
+                },
+                {
+                  "name": "Error",
+                  "value": "Error"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Texto Generado IA",
+              "displayName": "Texto Generado IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Aprobado por Humano",
+              "displayName": "Aprobado por Humano",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Message-ID Original",
+              "displayName": "Message-ID Original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Asunto Original",
+              "displayName": "Asunto Original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Detalle Error",
+              "displayName": "Detalle Error",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Cliente",
+              "displayName": "Cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Mensaje Original",
+              "displayName": "Mensaje Original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Resume Webhook URL",
+              "displayName": "Resume Webhook URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        1808,
+        -240
+      ],
+      "id": "ba4d61d0-baf8-4b0c-b954-878f7de68119",
+      "name": "12 - Airtable - Marcar Aprobado",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "kexphqKJlX9vmyik",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": "={{ $('01 - Gmail Trigger - Nueva Cotización').item.json.id }}",
+        "message": "={{ $('07 - IA - Generar Cotización').item.json.output }}",
+        "options": {
+          "replyToSenderOnly": true
+        }
+      },
+      "id": "0cd4ee8c-ca5a-47eb-bdd4-d9d4b04382ca",
+      "name": "13 - Gmail - Enviar Cotización al Cliente",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2176,
+        -256
+      ],
+      "webhookId": "26d0b905-8299-4b2f-982c-c74442c03037",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "9qZF7hY9X9WvCnx0",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appfVcP7wF1EQ4pQk",
+          "mode": "list",
+          "cachedResultName": "Cotizaciones Logísticas IA",
+          "cachedResultUrl": "https://airtable.com/appfVcP7wF1EQ4pQk"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl7IAZKiwu2suc3o",
+          "mode": "list",
+          "cachedResultName": "Cotizaciones",
+          "cachedResultUrl": "https://airtable.com/appfVcP7wF1EQ4pQk/tbl7IAZKiwu2suc3o"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('09 - Airtable - Registrar Cotización').first().json.id }}",
+            "Estado": "Enviado"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Id",
+              "displayName": "Id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Ruta",
+              "displayName": "Ruta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Cliente Email",
+              "displayName": "Cliente Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Peso (kg)",
+              "displayName": "Peso (kg)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pendiente",
+                  "value": "Pendiente"
+                },
+                {
+                  "name": "Procesado por IA",
+                  "value": "Procesado por IA"
+                },
+                {
+                  "name": "Aprobado por Humano",
+                  "value": "Aprobado por Humano"
+                },
+                {
+                  "name": "Enviado",
+                  "value": "Enviado"
+                },
+                {
+                  "name": "Incompleto",
+                  "value": "Incompleto"
+                },
+                {
+                  "name": "Error",
+                  "value": "Error"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Texto Generado IA",
+              "displayName": "Texto Generado IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Aprobado por Humano",
+              "displayName": "Aprobado por Humano",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Message-ID Original",
+              "displayName": "Message-ID Original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Asunto Original",
+              "displayName": "Asunto Original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Detalle Error",
+              "displayName": "Detalle Error",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Cliente",
+              "displayName": "Cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Mensaje Original",
+              "displayName": "Mensaje Original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Resume Webhook URL",
+              "displayName": "Resume Webhook URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        2400,
+        -256
+      ],
+      "id": "dde2ca79-826a-4c55-b0a6-71ad853c1d5d",
+      "name": "14 - Airtable - Marcar Enviado",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "kexphqKJlX9vmyik",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appfVcP7wF1EQ4pQk",
+          "mode": "list",
+          "cachedResultName": "Cotizaciones Logísticas IA",
+          "cachedResultUrl": "https://airtable.com/appfVcP7wF1EQ4pQk"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl7IAZKiwu2suc3o",
+          "mode": "list",
+          "cachedResultName": "Cotizaciones",
+          "cachedResultUrl": "https://airtable.com/appfVcP7wF1EQ4pQk/tbl7IAZKiwu2suc3o"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Estado": "Incompleto",
+            "Cliente Email": "={{ $('01 - Gmail Trigger - Nueva Cotización').item.json.From.match(/<([^>]+)>/) ? $('01 - Gmail Trigger - Nueva Cotización').item.json.From.match(/<([^>]+)>/)[1] : $('01 - Gmail Trigger - Nueva Cotización').item.json.From }}",
+            "Mensaje Original": "={{ $('01 - Gmail Trigger - Nueva Cotización').item.json.snippet }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Id",
+              "displayName": "Id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Ruta",
+              "displayName": "Ruta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Cliente Email",
+              "displayName": "Cliente Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Peso (kg)",
+              "displayName": "Peso (kg)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pendiente",
+                  "value": "Pendiente"
+                },
+                {
+                  "name": "Procesado por IA",
+                  "value": "Procesado por IA"
+                },
+                {
+                  "name": "Aprobado por Humano",
+                  "value": "Aprobado por Humano"
+                },
+                {
+                  "name": "Enviado",
+                  "value": "Enviado"
+                },
+                {
+                  "name": "Incompleto",
+                  "value": "Incompleto"
+                },
+                {
+                  "name": "Error",
+                  "value": "Error"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Texto Generado IA",
+              "displayName": "Texto Generado IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Aprobado por Humano",
+              "displayName": "Aprobado por Humano",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Message-ID Original",
+              "displayName": "Message-ID Original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Asunto Original",
+              "displayName": "Asunto Original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Detalle Error",
+              "displayName": "Detalle Error",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Cliente",
+              "displayName": "Cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Mensaje Original",
+              "displayName": "Mensaje Original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "3806d5f2-37d8-4673-a13a-f8428919fbaa",
+      "name": "15 - Airtable - Registrar Datos Incompletos",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        -192,
+        336
+      ],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "kexphqKJlX9vmyik",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": "={{ $('01 - Gmail Trigger - Nueva Cotización').item.json.id }}",
+        "emailType": "text",
+        "message": "Porfavor enviame los datos de, Origen, destino, peso en kg, tipo de carga",
+        "options": {
+          "replyToSenderOnly": true
+        }
+      },
+      "id": "6bafcb82-87c9-4dec-ae20-f2cdbc95fb16",
+      "name": "16 - Gmail - Solicitar Datos Faltantes",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        160,
+        336
+      ],
+      "webhookId": "26d0b905-8299-4b2f-982c-c74442c03037",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "9qZF7hY9X9WvCnx0",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appfVcP7wF1EQ4pQk",
+          "mode": "list",
+          "cachedResultName": "Cotizaciones Logísticas IA",
+          "cachedResultUrl": "https://airtable.com/appfVcP7wF1EQ4pQk"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl7IAZKiwu2suc3o",
+          "mode": "list",
+          "cachedResultName": "Cotizaciones",
+          "cachedResultUrl": "https://airtable.com/appfVcP7wF1EQ4pQk/tbl7IAZKiwu2suc3o"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Aprobado por Humano": false,
+            "Estado": "Error",
+            "Message-ID Original": "={{ $('01 - Gmail Trigger - Nueva Cotización').item.json.threadId }}",
+            "Asunto Original": "={{ $('01 - Gmail Trigger - Nueva Cotización').item.json.Subject }}",
+            "Detalle Error": "Error con el nodo de ia",
+            "Cliente Email": "={{ $('01 - Gmail Trigger - Nueva Cotización').item.json.From }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Id",
+              "displayName": "Id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Ruta",
+              "displayName": "Ruta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Cliente Email",
+              "displayName": "Cliente Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Peso (kg)",
+              "displayName": "Peso (kg)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pendiente",
+                  "value": "Pendiente"
+                },
+                {
+                  "name": "Procesado por IA",
+                  "value": "Procesado por IA"
+                },
+                {
+                  "name": "Aprobado por Humano",
+                  "value": "Aprobado por Humano"
+                },
+                {
+                  "name": "Enviado",
+                  "value": "Enviado"
+                },
+                {
+                  "name": "Incompleto",
+                  "value": "Incompleto"
+                },
+                {
+                  "name": "Error",
+                  "value": "Error"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Texto Generado IA",
+              "displayName": "Texto Generado IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Aprobado por Humano",
+              "displayName": "Aprobado por Humano",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Message-ID Original",
+              "displayName": "Message-ID Original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Asunto Original",
+              "displayName": "Asunto Original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Detalle Error",
+              "displayName": "Detalle Error",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Cliente",
+              "displayName": "Cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Mensaje Original",
+              "displayName": "Mensaje Original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Resume Webhook URL",
+              "displayName": "Resume Webhook URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        -560,
+        208
+      ],
+      "id": "5de650c6-5f53-4828-8517-d7415ceab0e3",
+      "name": "17 - Airtable - Registrar Error IA",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "kexphqKJlX9vmyik",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appfVcP7wF1EQ4pQk",
+          "mode": "list",
+          "cachedResultName": "Cotizaciones Logísticas IA",
+          "cachedResultUrl": "https://airtable.com/appfVcP7wF1EQ4pQk"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl7IAZKiwu2suc3o",
+          "mode": "list",
+          "cachedResultName": "Cotizaciones",
+          "cachedResultUrl": "https://airtable.com/appfVcP7wF1EQ4pQk/tbl7IAZKiwu2suc3o"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('09 - Airtable - Registrar Cotización').first().json.id }}",
+            "Estado": "Rechazado por Humano",
+            "Aprobado por Humano": false
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Id",
+              "displayName": "Id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Ruta",
+              "displayName": "Ruta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Cliente Email",
+              "displayName": "Cliente Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Peso (kg)",
+              "displayName": "Peso (kg)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pendiente",
+                  "value": "Pendiente"
+                },
+                {
+                  "name": "Procesado por IA",
+                  "value": "Procesado por IA"
+                },
+                {
+                  "name": "Aprobado por Humano",
+                  "value": "Aprobado por Humano"
+                },
+                {
+                  "name": "Enviado",
+                  "value": "Enviado"
+                },
+                {
+                  "name": "Incompleto",
+                  "value": "Incompleto"
+                },
+                {
+                  "name": "Error",
+                  "value": "Error"
+                },
+                {
+                  "name": "Rechazado por Humano",
+                  "value": "Rechazado por Humano"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Texto Generado IA",
+              "displayName": "Texto Generado IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Aprobado por Humano",
+              "displayName": "Aprobado por Humano",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Message-ID Original",
+              "displayName": "Message-ID Original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Asunto Original",
+              "displayName": "Asunto Original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Detalle Error",
+              "displayName": "Detalle Error",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Cliente",
+              "displayName": "Cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Mensaje Original",
+              "displayName": "Mensaje Original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Resume Webhook URL",
+              "displayName": "Resume Webhook URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        1696,
+        -32
+      ],
+      "id": "71b2d25a-7d7d-4160-97e4-f05d74b29d22",
+      "name": "18 - Airtable - Marcar Rechazado",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "kexphqKJlX9vmyik",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ae1dc358-f6c5-42d9-b6eb-2f96eeec906d",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        128,
+        -144
+      ],
+      "id": "bffeef96-ba95-4285-91c4-4a4ae933f03c",
+      "name": "06B - Validar Tarifa Encontrada"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appfVcP7wF1EQ4pQk",
+          "mode": "list",
+          "cachedResultName": "Cotizaciones Logísticas IA",
+          "cachedResultUrl": "https://airtable.com/appfVcP7wF1EQ4pQk"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl7IAZKiwu2suc3o",
+          "mode": "list",
+          "cachedResultName": "Cotizaciones",
+          "cachedResultUrl": "https://airtable.com/appfVcP7wF1EQ4pQk/tbl7IAZKiwu2suc3o"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Aprobado por Humano": false,
+            "Estado": "Sin tarifa",
+            "Peso (kg)": "={{ $('04 - Parsear JSON de IA').item.json.peso_kg }}",
+            "Cliente Email": "={{ $('01 - Gmail Trigger - Nueva Cotización').item.json.From.match(/<([^>]+)>/) ? $('01 - Gmail Trigger - Nueva Cotización').item.json.From.match(/<([^>]+)>/)[1] : $('01 - Gmail Trigger - Nueva Cotización').item.json.From }}",
+            "Asunto Original": "={{ $('01 - Gmail Trigger - Nueva Cotización').item.json.Subject }}",
+            "Message-ID Original": "={{ $('01 - Gmail Trigger - Nueva Cotización').item.json.threadId }}",
+            "Mensaje Original": "={{ $('01 - Gmail Trigger - Nueva Cotización').item.json.snippet }}",
+            "Detalle Error": "={{ 'No se encontró tarifa para: ' + $('04 - Parsear JSON de IA').item.json.origen + ' → ' + $('04 - Parsear JSON de IA').item.json.destino + ' / Tipo de carga: ' + $('04 - Parsear JSON de IA').item.json.tipo_carga }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Id",
+              "displayName": "Id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Ruta",
+              "displayName": "Ruta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Cliente Email",
+              "displayName": "Cliente Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Peso (kg)",
+              "displayName": "Peso (kg)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pendiente",
+                  "value": "Pendiente"
+                },
+                {
+                  "name": "Procesado por IA",
+                  "value": "Procesado por IA"
+                },
+                {
+                  "name": "Aprobado por Humano",
+                  "value": "Aprobado por Humano"
+                },
+                {
+                  "name": "Enviado",
+                  "value": "Enviado"
+                },
+                {
+                  "name": "Incompleto",
+                  "value": "Incompleto"
+                },
+                {
+                  "name": "Error",
+                  "value": "Error"
+                },
+                {
+                  "name": "Rechazado por Humano",
+                  "value": "Rechazado por Humano"
+                },
+                {
+                  "name": "Sin tarifa",
+                  "value": "Sin tarifa"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Texto Generado IA",
+              "displayName": "Texto Generado IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Aprobado por Humano",
+              "displayName": "Aprobado por Humano",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Message-ID Original",
+              "displayName": "Message-ID Original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Asunto Original",
+              "displayName": "Asunto Original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Detalle Error",
+              "displayName": "Detalle Error",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Cliente",
+              "displayName": "Cliente",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Mensaje Original",
+              "displayName": "Mensaje Original",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Resume Webhook URL",
+              "displayName": "Resume Webhook URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Indicador Error",
+              "displayName": "Indicador Error",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        256,
+        128
+      ],
+      "id": "40daff73-66ed-4a19-ba42-bf1f6d24b284",
+      "name": "19 - Airtable - Registrar Tarifa No Encontrada",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "kexphqKJlX9vmyik",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": "={{ $('01 - Gmail Trigger - Nueva Cotización').item.json.id }}",
+        "emailType": "text",
+        "message": "Hola,  Recibimos correctamente tu solicitud de cotización.  En este momento no contamos con una tarifa automática cargada para la combinación de origen, destino y tipo de carga solicitada.  La solicitud quedó registrada para revisión.  Saludos, Federico Jorda Supervisor de ruteo",
+        "options": {
+          "replyToSenderOnly": true
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        592,
+        128
+      ],
+      "id": "02526d15-f09e-48ef-9699-eeabe4440f4f",
+      "name": "20 - Gmail - Informar Tarifa No Disponible",
+      "webhookId": "65423d17-c236-4346-8b4c-39c3ceff07eb",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "9qZF7hY9X9WvCnx0",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "01 - Gmail Trigger - Nueva Cotización": {
+      "main": [
+        [
+          {
+            "node": "02 - IA - Extraer Datos del Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02 - IA - Extraer Datos del Email": {
+      "main": [
+        [
+          {
+            "node": "04 - Parsear JSON de IA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "17 - Airtable - Registrar Error IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03 - LLM Groq - Extracción": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "02 - IA - Extraer Datos del Email",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "04 - Parsear JSON de IA": {
+      "main": [
+        [
+          {
+            "node": "05 - Validar Datos Obligatorios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05 - Validar Datos Obligatorios": {
+      "main": [
+        [
+          {
+            "node": "06 - Airtable - Buscar Ruta y Tarifa",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "15 - Airtable - Registrar Datos Incompletos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "06 - Airtable - Buscar Ruta y Tarifa": {
+      "main": [
+        [
+          {
+            "node": "06B - Validar Tarifa Encontrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "07 - IA - Generar Cotización": {
+      "main": [
+        [
+          {
+            "node": "09 - Airtable - Registrar Cotización",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "08 - LLM Groq - Generación": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "07 - IA - Generar Cotización",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "09 - Airtable - Registrar Cotización": {
+      "main": [
+        [
+          {
+            "node": "10 - HITL - Solicitar Aprobación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10 - HITL - Solicitar Aprobación": {
+      "main": [
+        [
+          {
+            "node": "11 - Validar Aprobación Humana",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11 - Validar Aprobación Humana": {
+      "main": [
+        [
+          {
+            "node": "12 - Airtable - Marcar Aprobado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "18 - Airtable - Marcar Rechazado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "12 - Airtable - Marcar Aprobado": {
+      "main": [
+        [
+          {
+            "node": "13 - Gmail - Enviar Cotización al Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "13 - Gmail - Enviar Cotización al Cliente": {
+      "main": [
+        [
+          {
+            "node": "14 - Airtable - Marcar Enviado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "15 - Airtable - Registrar Datos Incompletos": {
+      "main": [
+        [
+          {
+            "node": "16 - Gmail - Solicitar Datos Faltantes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "06B - Validar Tarifa Encontrada": {
+      "main": [
+        [
+          {
+            "node": "07 - IA - Generar Cotización",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "19 - Airtable - Registrar Tarifa No Encontrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "19 - Airtable - Registrar Tarifa No Encontrada": {
+      "main": [
+        [
+          {
+            "node": "20 - Gmail - Informar Tarifa No Disponible",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "5fca330e-4e8f-4594-a779-d4bf048e6b3d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "313f1b722e4be52e70f57960db10cb83529623662ed7d7411ae33326681916ad"
+  },
+  "nodeGroups": [],
+  "id": "1yRLfH0gjw6PSxeZ",
+  "tags": []
+}
